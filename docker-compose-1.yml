@@ -1,18 +1,71 @@
-version: '1'
-services:
-  postgres:
+---
+postgres:
     image: "postgres:9.6"
+    ports:
+      - "5432:5432"
+    volumes:
+      - data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: awx
       POSTGRES_PASSWORD: awxpass
       POSTGRES_DB: awx
 
-  rabbitmq:
+rabbitmq:
     image: "rabbitmq:3"
     environment:
       RABBITMQ_DEFAULT_VHOST: awx
 
-  memcached:
-    image: "memcached:alpine"
+memcached:
+    image: "memcached:latest"
+    ports:
+      - '11211:11211'
+  
+awx_web: 
+  environment: 
+    DATABASE_HOST: postgres
+    DATABASE_NAME: awx
+    DATABASE_PASSWORD: awxpass
+    DATABASE_PORT: 5432
+    DATABASE_USER: awx
+    MEMCACHED_HOST: memcached
+    MEMCACHED_PORT: 11211
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PASSWORD: guest
+    RABBITMQ_PORT: 5672
+    RABBITMQ_USER: guest
+    RABBITMQ_VHOST: awx
+    SECRET_KEY: aabbcc
+  hostname: awxweb
+  image: "geerlingguy/awx_web:latest"
+  links: 
+    - rabbitmq
+    - memcached
+    - postgres
+  ports: 
+    - "80:8052"
+  user: root
 
- 
+awx_task: 
+  environment: 
+    DATABASE_HOST: postgres
+    DATABASE_NAME: awx
+    DATABASE_PASSWORD: awxpass
+    DATABASE_PORT: 5432
+    DATABASE_USER: awx
+    MEMCACHED_HOST: memcached
+    MEMCACHED_PORT: 11211
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PASSWORD: guest
+    RABBITMQ_PORT: 5672
+    RABBITMQ_USER: guest
+    RABBITMQ_VHOST: awx
+    SECRET_KEY: aabbcc
+  hostname: awx
+  image: "geerlingguy/awx_task:latest"
+  links: 
+    - rabbitmq
+    - memcached
+    - "awx_web:awxweb"
+    - postgres
+  user: root
+
